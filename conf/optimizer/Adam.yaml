@@ -1,0 +1,4 @@
+optimizer:
+  name: Adam
+  lr: 1e-4
+  beta: 1e-2

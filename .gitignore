@@ -1,3 +1,7 @@
+# Ignoring vscode, ipynb, and hydra artifacts
 /__pycache__
 /.ipynb_checkpoints
-/SomiteTraceLibrary
+/outputs
+# Ingnore the data folder
+/datasets
+*.hdf5
