@@ -5,3 +5,5 @@
 # Ingnore the data folder
 /datasets
 *.hdf5
+/logs
+/model_weights

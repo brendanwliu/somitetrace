@@ -1,8 +1,16 @@
-from model import unet
+# from model import 
+import model
 from somiteData import trainGenerator, testGenerator, saveResult
 from keras.callbacks import ModelCheckpoint
+from keras.callbacks import TensorBoard
+from keras.callbacks import CSVLogger
+from keras.callbacks import EarlyStopping
+from keras.optimizers import Adam
+from keras.applications import VGG16
+import os
 
-dataAugArgs = dict(rotation_range=0.2,
+dataAugArgs = dict( rescale = 1./255,
+                    rotation_range=0.2,
                     width_shift_range=0.05,
                     height_shift_range=0.05,
                     shear_range=0.05,
@@ -10,11 +18,53 @@ dataAugArgs = dict(rotation_range=0.2,
                     horizontal_flip=True,
                     fill_mode='nearest')
 
-train = trainGenerator(1, 'datasets/SomiteTraceLibrary/input/train', 'image', 'label', dataAugArgs, save_to_dir=None)
-model1 = unet()
-model_checkpoint = ModelCheckpoint('unetFirstRun.hdf5', monitor='loss', verbose = 1, save_best_only = True)
-model1.fit_generator(train,steps_per_epoch=10,epochs=1,callbacks=[model_checkpoint])
+DATA_PATH = 'datasets/SomiteTraceLibrary/input/'
+FRAME_PATH = DATA_PATH + 'frames/'
+MASK_PATH = DATA_PATH + 'masks/'
 
-test = testGenerator("datasets/SomiteTraceLibrary/input/test/image",target_size = (128,128))
-results = model1.predict_generator(test,180, verbose=1)
-saveResult("datasets/SomiteTraceLibrary/input/test/results", results)
+NO_OF_TRAINING_IMAGES = len(os.listdir(DATA_PATH + 'train_frames/'))
+NO_OF_VAL_IMAGES = len(os.listdir(DATA_PATH + 'val_frames'))
+
+NO_OF_EPOCHS = 2
+
+BATCH_SIZE = 4
+
+trainGen = trainGenerator(4,'datasets/SomiteTraceLibrary/input','train_frames','train_masks',dataAugArgs,save_to_dir = None)
+valGen = trainGenerator(4,'datasets/SomiteTraceLibrary/input','val_frames','val_masks',dataAugArgs,save_to_dir = None)
+
+weights_path = 'model_weights/'
+
+m = model.unet()
+opt = Adam(lr=1E-5, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+m.compile(loss=model.dice_coef_loss,
+              optimizer=opt,
+              metrics=[model.dice_coef])
+
+checkpoint = ModelCheckpoint(weights_path, monitor=model.dice_coef, 
+                             verbose=1, save_best_only=True, mode='max')
+
+csv_logger = CSVLogger('./logs/1log.out', append=True, separator=';')
+
+earlystopping = EarlyStopping(monitor = model.dice_coef, verbose = 1,
+                               min_delta = 0.01, patience = 3, mode = 'max')
+
+tensorboard = TensorBoard(
+    log_dir = './logs',
+    write_graph= True,
+    write_images = True
+)
+
+callbacks_list = [tensorboard]
+
+results = m.fit_generator(trainGen, epochs=NO_OF_EPOCHS, 
+                          steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
+                          validation_data=valGen, 
+                          validation_steps=(NO_OF_VAL_IMAGES//BATCH_SIZE), 
+                          callbacks=callbacks_list)
+m.save('./model_weights/Model.h5')
+
+# train = trainGenerator(4, DATA_PATH, 'train_frames', 'train_masks', dataAugArgs, save_to_dir=None)
+# model1 = unet()
+# model_checkpoint = ModelCheckpoint('unetFirstRun.hdf5', monitor='loss', verbose = 1, save_best_only = True)
+# model1.fit_generator(train,steps_per_epoch=10,epochs=1,callbacks=[model_checkpoint])

@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imread
 import seaborn as sns
 import cv2 as cv
-import PIL
+import random
+import re
 
 from keras.preprocessing.image import ImageDataGenerator 
 import os
 import glob
 import skimage.io as io
 import skimage.transform as trans
+from PIL import Image
 
 def center_crop(img, mask):
     imgCrop = img[(img.shape[0]//2 - 64):(img.shape[0]//2 + 64),(img.shape[1]//2 - 64):(img.shape[1]//2 + 64)]
@@ -52,7 +54,7 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         seed = seed)
     train_generator = zip(image_generator, mask_generator)
     for (img,mask) in train_generator:
-        #img, mask = center_crop(img, mask)
+        img, mask = center_crop(img, mask)
         yield (img, mask)
 
 def testGenerator(test_path,num_image = 30,target_size = (256,256),flag_multi_class = False,as_gray = True):
@@ -73,5 +75,86 @@ def labelVisualize(num_class,color_dict,img):
 
 def saveResult(save_path,npyfile,flag_multi_class = False,num_class = 2):
     for i,item in enumerate(npyfile):
-        img = labelVisualize(num_class,COLOR_DICT,item) if flag_multi_class else item[:,:,0]
+        img = labelVisualize(num_class, COLOR_DICT,item) if flag_multi_class else item[:,:,0]
         io.imsave(os.path.join(save_path,"%d_predict.png"%i),img)
+
+#Add train, val, test frames and masks to relevant folders
+
+def add_frames(dir_name, image):
+    img = Image.open(FRAME_PATH+image)
+    img.save(DATA_PATH+'/{}'.format(dir_name)+'/'+image)
+
+def add_masks(dir_name, image):
+    img = Image.open(MASK_PATH+image)
+    img.save(DATA_PATH+'/{}'.format(dir_name)+'/'+image)
+
+if __name__ == "__main__":
+    DATA_PATH = 'datasets/SomiteTraceLibrary/input/'
+    FRAME_PATH = DATA_PATH + 'frames/'
+    MASK_PATH = DATA_PATH + 'masks/'
+
+    # Create folders to hold images and masks
+
+    folders = ['train_frames', 'train_masks', 'val_frames', 'val_masks', 'test_frames', 'test_masks']
+
+
+    for folder in folders:
+        os.makedirs(DATA_PATH + folder)
+    
+    
+    # Get all frames and masks, sort them, shuffle them to generate data sets.
+
+    all_frames = os.listdir(FRAME_PATH)
+    all_masks = os.listdir(MASK_PATH)
+
+
+    all_frames.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                                    for x in re.findall(r'[^0-9]|[0-9]+', var)])
+    all_masks.sort(key=lambda var:[int(x) if x.isdigit() else x 
+                                for x in re.findall(r'[^0-9]|[0-9]+', var)])
+
+    random.seed(230)
+    temp = list(zip(all_frames, all_masks)) 
+    random.shuffle(temp) 
+    all_frames, all_masks = zip(*temp) 
+
+    # Generate train, val, and test sets for frames
+
+    train_split = int(0.7*len(all_frames))
+    val_split = int(0.9 * len(all_frames))
+
+    train_frames = all_frames[:train_split]
+    val_frames = all_frames[train_split:val_split]
+    test_frames = all_frames[val_split:]
+
+
+    # Generate corresponding mask lists for masks
+
+    train_masks = all_masks[:train_split]
+    val_masks = all_masks[train_split:val_split]
+    test_masks = all_masks[val_split:]
+
+    frame_folders = [(train_frames, 'train_frames'), (val_frames, 'val_frames'), 
+                    (test_frames, 'test_frames')]
+
+    mask_folders = [(train_masks, 'train_masks'), (val_masks, 'val_masks'), 
+                    (test_masks, 'test_masks')]
+
+    # Add frames
+
+    for folder in frame_folders:
+    
+        array = folder[0]
+        name = [folder[1]] * len(array)
+    
+        list(map(add_frames, name, array))
+            
+        
+    # Add masks
+
+    for folder in mask_folders:
+    
+        array = folder[0]
+        name = [folder[1]] * len(array)
+    
+        list(map(add_masks, name, array))
