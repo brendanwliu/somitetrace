@@ -58,9 +58,13 @@ def unet(pretrained_weights = None, input_size = (128,128,1), lr = 1e-4):
   return model
 
 def dice_coef(y_true, y_pred, smooth=1):
-    intersection = K.sum(y_true * y_pred, axis=[1,2,3])
-    union = K.sum(y_true, axis=[1,2,3]) + K.sum(y_pred, axis=[1,2,3])
-    return K.mean( (2. * intersection + smooth) / (union + smooth), axis=0)
+    """
+    Dice = (2*|X & Y|)/ (|X|+ |Y|)
+         =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
+    ref: https://arxiv.org/pdf/1606.04797v1.pdf
+    """
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    return (2. * intersection + smooth) / (K.sum(K.square(y_true),-1) + K.sum(K.square(y_pred),-1) + smooth)
 
 def dice_coef_loss(y_true, y_pred):
-    return -dice_coef(y_true, y_pred)
+    return 1-dice_coef(y_true, y_pred)

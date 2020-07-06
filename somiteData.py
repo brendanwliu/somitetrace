@@ -57,9 +57,10 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         img, mask = center_crop(img, mask)
         yield (img, mask)
 
-def testGenerator(test_path,num_image = 30,target_size = (256,256),flag_multi_class = False,as_gray = True):
+def testGenerator(data_path, test_path, num_image = 30,target_size = (256,256),flag_multi_class = False,as_gray = True):
+    masks = os.listdir(data_path + test_path)
     for i in range(num_image):
-        img = io.imread(os.path.join(test_path,"%d.tif"%i),as_gray = as_gray)
+        img = io.imread(data_path + test_path + masks[i],as_gray = as_gray)
         img = img / 255
         img = trans.resize(img,target_size)
         img = np.reshape(img,img.shape+(1,)) if (not flag_multi_class) else img
