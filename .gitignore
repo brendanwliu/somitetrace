@@ -1,9 +1,13 @@
 # Ignoring vscode, ipynb, and hydra artifacts
 /__pycache__
+/unet/__pycache__
+/utils/__pycache__
 /.ipynb_checkpoints
 /outputs
 # Ingnore the data folder
 /datasets
 *.hdf5
 /logs
-/model_weights
+/model_pth
+/checkpoints
+/runs
