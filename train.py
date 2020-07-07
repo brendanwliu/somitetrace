@@ -9,8 +9,7 @@ from keras.optimizers import Adam
 from keras.applications import VGG16
 import os
 
-dataAugArgs = dict( rescale = 1./255,
-                    rotation_range=0.2,
+dataAugArgs = dict( rotation_range=0.2,
                     width_shift_range=0.05,
                     height_shift_range=0.05,
                     shear_range=0.05,
@@ -29,42 +28,35 @@ NO_OF_EPOCHS = 35
 
 BATCH_SIZE = 4
 
-trainGen = trainGenerator(4,'datasets/SomiteTraceLibrary/input','train_frames','train_masks',dataAugArgs,save_to_dir = None)
-valGen = trainGenerator(4,'datasets/SomiteTraceLibrary/input','val_frames','val_masks',dataAugArgs,save_to_dir = None)
+trainGen = trainGenerator(BATCH_SIZE ,'datasets/SomiteTraceLibrary/input','train_frames','train_masks', dataAugArgs, save_to_dir = None)
+valGen = trainGenerator(BATCH_SIZE ,'datasets/SomiteTraceLibrary/input','val_frames','val_masks', dataAugArgs, save_to_dir = None)
 
 weights_path = 'model_weights/'
 
 m = model.unet()
 opt = Adam(lr=1E-5, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
-m.compile(loss='binary_crossentropy',
+m.compile(loss = model.dice_coef_loss,
               optimizer=opt,
-              metrics=['accuracy'])
+              metrics=[model.dice_coef])
 
-checkpoint = ModelCheckpoint(weights_path, monitor='accuracy', 
+checkpoint = ModelCheckpoint(weights_path, monitor = model.dice_coef, 
                              verbose=1, save_best_only=True, mode='max')
 
-csv_logger = CSVLogger('./logs/2log.out', append=True, separator=';')
-
-earlystopping = EarlyStopping(monitor = 'acc', verbose = 1,
-                               min_delta = 0.01, patience = 3, mode = 'max')
+csv_logger = CSVLogger('./logs/1log.out', append=True, separator=';')
 
 tensorboard = TensorBoard(
-    log_dir = './logs/bce/',
+    log_dir = './logs/dice/',
     write_graph = True,
     write_images = True
 )
 
-callbacks_list = [checkpoint, csv_logger, earlystopping, tensorboard]
+callbacks_list = [checkpoint, csv_logger, tensorboard]
 
 results = m.fit_generator(trainGen, epochs=NO_OF_EPOCHS, 
                           steps_per_epoch = (NO_OF_TRAINING_IMAGES//BATCH_SIZE),
                           validation_data=valGen, 
                           validation_steps=(NO_OF_VAL_IMAGES//BATCH_SIZE), 
+                          shuffle=True,
                           callbacks=callbacks_list)
-m.save('./model_weights/bce_Model.h5')
-
-# train = trainGenerator(4, DATA_PATH, 'train_frames', 'train_masks', dataAugArgs, save_to_dir=None)
-# model1 = unet()
-# model_checkpoint = ModelCheckpoint('unetFirstRun.hdf5', monitor='loss', verbose = 1, save_best_only = True)
-# model1.fit_generator(train,steps_per_epoch=10,epochs=1,callbacks=[model_checkpoint])
+m.save('./model_weights/dice_Model.h5')

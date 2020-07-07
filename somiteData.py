@@ -29,7 +29,6 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
     use the same seed for image_datagen and mask_datagen to ensure the transformation for image and mask is the same
     if you want to visualize the results of generator, set save_to_dir = "your path"
     '''
-    # we use the data generator for augmenting data - TODO later
     image_datagen = ImageDataGenerator(**aug_dict)
     mask_datagen = ImageDataGenerator(**aug_dict)
     image_generator = image_datagen.flow_from_directory(
@@ -44,7 +43,7 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         seed = seed)
     mask_generator = mask_datagen.flow_from_directory(
         train_path,
-        classes = [mask_folder],
+        classes=[mask_folder],
         class_mode = None,
         color_mode = mask_color_mode,
         target_size = target_size,
@@ -54,7 +53,6 @@ def trainGenerator(batch_size, train_path, image_folder, mask_folder, aug_dict, 
         seed = seed)
     train_generator = zip(image_generator, mask_generator)
     for (img,mask) in train_generator:
-        img, mask = center_crop(img, mask)
         yield (img, mask)
 
 def testGenerator(data_path, test_path, num_image = 30,target_size = (256,256),flag_multi_class = False,as_gray = True):
@@ -91,8 +89,8 @@ def add_masks(dir_name, image):
 
 if __name__ == "__main__":
     DATA_PATH = 'datasets/SomiteTraceLibrary/input/'
-    FRAME_PATH = DATA_PATH + 'frames/'
-    MASK_PATH = DATA_PATH + 'masks/'
+    FRAME_PATH = DATA_PATH + 'frames_png/'
+    MASK_PATH = DATA_PATH + 'masks_bmp/'
 
     # Create folders to hold images and masks
 
