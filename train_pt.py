@@ -16,10 +16,12 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.dataset import BasicDataset
 from torch.utils.data import DataLoader, random_split
 
+import torchvision
+from torchvision import transforms
+
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
-dir_checkpoint = 'checkpoints/'
-
+dir_checkpoint = 'checkpoints/CP_7_13_2020/'
 
 def train_net(net,
               device,
@@ -37,7 +39,7 @@ def train_net(net,
     train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, drop_last=True)
 
-    writer = SummaryWriter(comment=f'LR_{lr}_BS_{batch_size}_SCALE_{img_scale}')
+    writer = SummaryWriter(comment=f'_LR_{lr}_BS_{batch_size}_SCALE_{img_scale}')
     global_step = 0
 
     logging.info(f'''Starting training:
@@ -109,10 +111,6 @@ def train_net(net,
                     if net.n_classes == 1:
                         writer.add_images('masks/true', true_masks, global_step)
                         writer.add_images('masks/pred', torch.sigmoid(masks_pred), global_step)
-                        writer.add_images('image/gt', {
-                            'image':imgs,
-                            'mask':true_masks
-                        }, global_step)
 
         if save_cp:
             try:
@@ -183,7 +181,7 @@ if __name__ == '__main__':
                   img_scale=args.scale,
                   val_percent=args.val / 100)
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), 'INTERRUPTED.pth')
+        torch.save(net.state_dict(), 'logs/INTERRUPTED.pth')
         logging.info('Saved interrupt')
         try:
             sys.exit(0)

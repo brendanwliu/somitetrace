@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import Dataset
 import logging
 from PIL import Image
-from torchvision.transforms import CenterCrop
+from torchvision.transforms import CenterCrop, RandomRotation, ColorJitter
 
 
 class BasicDataset(Dataset):
@@ -53,7 +53,7 @@ class BasicDataset(Dataset):
         assert len(img_file) == 1, \
             f'Either no image or multiple images found for the ID {idx}: {img_file}'
         mask = Image.open(mask_file[0])
-        img = Image.open(img_file[0])
+        img = ColorJitter(brightness=0.4,saturation=0.4,contrast=0.4,hue=0.4)(Image.open(img_file[0]))
 
         assert img.size == mask.size, \
             f'Image and mask {idx} should be the same size, but are {img.size} and {mask.size}'
