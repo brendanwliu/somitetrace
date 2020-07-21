@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import glob
 
 import numpy as np
 import torch
@@ -56,7 +57,7 @@ def get_args():
                         metavar='FILE',
                         help="Specify the file in which the model is stored")
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+',
-                        help='filenames of input images', required=True)
+                        help='directory of input images', required=True)
 
     parser.add_argument('--output', '-o', metavar='INPUT', nargs='+',
                         help='Filenames of ouput images')
@@ -76,8 +77,8 @@ def get_args():
     return parser.parse_args()
 
 
-def get_output_filenames(args):
-    in_files = args.input
+def get_output_filenames(f_list):
+    in_files = f_list
     out_files = []
 
     if not args.output:
@@ -99,8 +100,8 @@ def mask_to_image(mask):
 
 if __name__ == "__main__":
     args = get_args()
-    in_files = args.input
-    out_files = get_output_filenames(args)
+    in_files = glob.glob(args.input[0] + "*.tif")
+    out_files = get_output_filenames(in_files)
 
     net = UNet(n_channels=1, n_classes=1)
 
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     net.load_state_dict(torch.load(args.model, map_location=device))
 
     logging.info("Model loaded !")
-
+    
     for i, fn in enumerate(in_files):
         logging.info("\nPredicting image {} ...".format(fn))
 
