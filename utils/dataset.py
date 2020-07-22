@@ -6,14 +6,17 @@ import torch
 from torch.utils.data import Dataset
 import logging
 from PIL import Image
-from torchvision.transforms import CenterCrop, RandomRotation, ColorJitter
+import torchvision.transforms as transforms
+import albumentations as A
+import cv2
 
 
 class BasicDataset(Dataset):
-    def __init__(self, imgs_dir, masks_dir, scale=1):
+    def __init__(self, imgs_dir, masks_dir, scale=1, transform=False):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
         self.scale = scale
+        self.transform = transform
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
 
         self.ids = [splitext(file)[0] for file in listdir(imgs_dir)
@@ -24,11 +27,11 @@ class BasicDataset(Dataset):
         return len(self.ids)
 
     @classmethod
-    def preprocess(cls, pil_img, scale):
+    def preprocess(cls, pil_img, scale = 1):
         w, h = pil_img.size
         newW, newH = int(scale * w), int(scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small'
-        pil_img = CenterCrop([128,128])(pil_img.resize((newW, newH)))
+        pil_img = transforms.CenterCrop([128,128])(pil_img.resize((newW, newH)))
 
         img_nd = np.array(pil_img)
 
@@ -53,14 +56,31 @@ class BasicDataset(Dataset):
         assert len(img_file) == 1, \
             f'Either no image or multiple images found for the ID {idx}: {img_file}'
         mask = Image.open(mask_file[0])
-        img = ColorJitter(brightness=0.4,saturation=0.4,contrast=0.4,hue=0.4)(Image.open(img_file[0]))
+        img = Image.open(img_file[0])
+
+        if self.transform:
+            aug = A.Compose([
+                A.CenterCrop(128,128),
+                A.ElasticTransform(p=0.4, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03)
+            ])
+            augmented = aug(image = np.array(img), mask = np.array(mask))
+            img_trans = augmented["image"].reshape((1,128,128))
+            mask_trans = augmented["mask"].reshape((1,128,128))
+
+            if img_trans.max() > 1:
+                img_trans = img_trans / 255
+
+            return {
+                'image': torch.from_numpy(img_trans).type(torch.FloatTensor),
+                'mask': torch.from_numpy(mask_trans).type(torch.FloatTensor)
+            }
 
         assert img.size == mask.size, \
             f'Image and mask {idx} should be the same size, but are {img.size} and {mask.size}'
 
         img = self.preprocess(img, self.scale)
         mask = self.preprocess(mask, self.scale)
-
+        
         return {
             'image': torch.from_numpy(img).type(torch.FloatTensor),
             'mask': torch.from_numpy(mask).type(torch.FloatTensor)
