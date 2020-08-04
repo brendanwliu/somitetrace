@@ -21,7 +21,7 @@ from torchvision import transforms
 
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
-dir_checkpoint = 'checkpoints/CP_7_21_2020/'
+dir_checkpoint = 'checkpoints/CP_7_28_2020/'
 
 def train_net(net,
               device,

@@ -58,9 +58,13 @@ class BasicDataset(Dataset):
         mask = Image.open(mask_file[0])
         img = Image.open(img_file[0])
 
+        assert img.size == mask.size, \
+            f'Image and mask {idx} should be the same size, but are {img.size} and {mask.size}'
+
         if self.transform:
             aug = A.Compose([
                 A.CenterCrop(128,128),
+                # A.GridDistortion(p = 0.3)
                 A.ElasticTransform(p=0.4, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03)
             ])
             augmented = aug(image = np.array(img), mask = np.array(mask))
@@ -74,9 +78,6 @@ class BasicDataset(Dataset):
                 'image': torch.from_numpy(img_trans).type(torch.FloatTensor),
                 'mask': torch.from_numpy(mask_trans).type(torch.FloatTensor)
             }
-
-        assert img.size == mask.size, \
-            f'Image and mask {idx} should be the same size, but are {img.size} and {mask.size}'
 
         img = self.preprocess(img, self.scale)
         mask = self.preprocess(mask, self.scale)

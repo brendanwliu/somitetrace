@@ -72,7 +72,7 @@ def get_args():
                         default=0.5)
     parser.add_argument('--scale', '-s', type=float,
                         help="Scale factor for the input images",
-                        default=0.5)
+                        default=1)
 
     return parser.parse_args()
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     for i, fn in enumerate(in_files):
         logging.info("\nPredicting image {} ...".format(fn))
 
-        img = Image.open(fn)
+        img = Image.open(fn).convert('L')
 
         mask = predict_img(net=net,
                            full_img=img,
