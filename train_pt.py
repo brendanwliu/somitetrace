@@ -16,21 +16,35 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.dataset import BasicDataset
 from torch.utils.data import DataLoader, random_split
 
+import torch
 import torchvision
 from torchvision import transforms
+import torchvision.models as models
 
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
-dir_checkpoint = 'checkpoints/CP_7_28_2020/'
+dir_checkpoint = 'checkpoints/CP_09_02_2020/'
+
+train_comp = transforms.Compose([
+    transforms.CenterCrop([128,128]),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5,), (0.5,))
+])
+
+val_comp = transforms.Compose([
+    transforms.CenterCrop([128,128]),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5,), (0.5,))
+])
 
 def train_net(net,
               device,
               epochs=5,
-              batch_size=1,
+              batch_size=8,
               lr=0.001,
               val_percent=0.1,
               save_cp=True,
-              img_scale=0.5):
+              img_scale=1):
 
     dataset = BasicDataset(dir_img, dir_mask, img_scale, transform=True)
     n_val = int(len(dataset) * val_percent)
@@ -79,6 +93,9 @@ def train_net(net,
 
                 masks_pred = net(imgs)
                 loss = criterion(masks_pred, true_masks)
+                for name, W in net.named_parameters():
+                    l1 = W.norm(p=1)
+                loss += l1
                 epoch_loss += loss.item()
                 writer.add_scalar('Loss/train', loss.item(), global_step)
 
@@ -110,7 +127,7 @@ def train_net(net,
                     writer.add_images('images', imgs, global_step)
                     if net.n_classes == 1:
                         writer.add_images('masks/true', true_masks, global_step)
-                        writer.add_images('masks/pred', torch.sigmoid(masks_pred) > 0.2, global_step)
+                        writer.add_images('masks/pred', torch.sigmoid(masks_pred), global_step)
 
         if save_cp:
             try:
@@ -128,11 +145,11 @@ def train_net(net,
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=5,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=10,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=8,
                         help='Batch size', dest='batchsize')
-    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.1,
+    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.01,
                         help='Learning rate', dest='lr')
     parser.add_argument('-f', '--load', dest='load', type=str, default=False,
                         help='Load model from a .pth file')
@@ -156,7 +173,14 @@ if __name__ == '__main__':
     #   - For 1 class and background, use n_classes=1
     #   - For 2 classes, use n_classes=1
     #   - For N > 2 classes, use n_classes=N
+    # vgg16 = models.vgg16(pretrained=True)
+    # pretrain_dict = vgg16.state_dict()
+    
     net = UNet(n_channels=1, n_classes=1, bilinear=True)
+    # net_dict = net.state_dict()
+    # pretrain_dict = {k: v for k, v in pretrain_dict.items() if k in net_dict} 
+    # print(pretrain_dict.item())
+    
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
                  f'\t{net.n_classes} output channels (classes)\n'

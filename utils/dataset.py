@@ -12,7 +12,7 @@ import cv2
 
 
 class BasicDataset(Dataset):
-    def __init__(self, imgs_dir, masks_dir, scale=1, transform=False):
+    def __init__(self, imgs_dir, masks_dir, scale=1, transform=None):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
         self.scale = scale
@@ -64,8 +64,7 @@ class BasicDataset(Dataset):
         if self.transform:
             aug = A.Compose([
                 A.CenterCrop(128,128),
-                # A.GridDistortion(p = 0.3)
-                A.ElasticTransform(p=0.4, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03)
+                A.Normalize(mean=(0.5), std=(0.5))
             ])
             augmented = aug(image = np.array(img), mask = np.array(mask))
             img_trans = augmented["image"].reshape((1,128,128))
@@ -74,7 +73,7 @@ class BasicDataset(Dataset):
             if img_trans.max() > 1:
                 img_trans = img_trans / 255
 
-            return {
+            return{
                 'image': torch.from_numpy(img_trans).type(torch.FloatTensor),
                 'mask': torch.from_numpy(mask_trans).type(torch.FloatTensor)
             }
