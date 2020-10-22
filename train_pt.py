@@ -23,19 +23,7 @@ import torchvision.models as models
 
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
-dir_checkpoint = 'checkpoints/CP_09_02_2020/'
-
-train_comp = transforms.Compose([
-    transforms.CenterCrop([128,128]),
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
-
-val_comp = transforms.Compose([
-    transforms.CenterCrop([128,128]),
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
+dir_checkpoint = 'checkpoints/CP2_10_21_2020/'
 
 def train_net(net,
               device,
@@ -67,7 +55,7 @@ def train_net(net,
         Images scaling:  {img_scale}
     ''')
 
-    optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.99)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     if net.n_classes > 1:
         criterion = nn.CrossEntropyLoss()
@@ -175,12 +163,11 @@ if __name__ == '__main__':
     #   - For N > 2 classes, use n_classes=N
     # vgg16 = models.vgg16(pretrained=True)
     # pretrain_dict = vgg16.state_dict()
-    
+
     net = UNet(n_channels=1, n_classes=1, bilinear=True)
-    # net_dict = net.state_dict()
-    # pretrain_dict = {k: v for k, v in pretrain_dict.items() if k in net_dict} 
-    # print(pretrain_dict.item())
-    
+
+    # pytorch_total_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+    # print(pytorch_total_params)
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
                  f'\t{net.n_classes} output channels (classes)\n'

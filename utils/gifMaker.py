@@ -9,7 +9,7 @@ from torchvision.transforms import CenterCrop
 def animate(dir):
     images = []
     for f in sorted(glob(dir + "*.tif")):
-        images.append(CenterCrop([128,128])(Image.open(f)))
+        images.append(CenterCrop((128,128))(Image.open(f)))
     images[0].save(dir + 'out.gif', save_all = True, append_images = images[1:], duration = 100, loop = 0)
     print("Saved!")
 

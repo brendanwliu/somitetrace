@@ -31,7 +31,8 @@ class BasicDataset(Dataset):
         w, h = pil_img.size
         newW, newH = int(scale * w), int(scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small'
-        pil_img = transforms.CenterCrop([128,128])(pil_img.resize((newW, newH)))
+
+        pil_img = transforms.CenterCrop((128,128))(pil_img.resize((newW, newH)))
 
         img_nd = np.array(pil_img)
 
@@ -63,8 +64,9 @@ class BasicDataset(Dataset):
 
         if self.transform:
             aug = A.Compose([
-                A.CenterCrop(128,128),
-                A.Normalize(mean=(0.5), std=(0.5))
+                #A.ElasticTransform(p = 0.3, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+                A.RandomCrop(128,128),
+                A.Normalize((0.5), (0.5))
             ])
             augmented = aug(image = np.array(img), mask = np.array(mask))
             img_trans = augmented["image"].reshape((1,128,128))
@@ -80,8 +82,8 @@ class BasicDataset(Dataset):
 
         img = self.preprocess(img, self.scale)
         mask = self.preprocess(mask, self.scale)
-        
+
         return {
-            'image': torch.from_numpy(img).type(torch.FloatTensor),
+            'image': transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(torch.from_numpy(img).type(torch.FloatTensor)),
             'mask': torch.from_numpy(mask).type(torch.FloatTensor)
         }

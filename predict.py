@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
+import albumentations as A
 
 from unet import UNet
 from utils.data_vis import plot_img_and_mask
@@ -20,8 +21,11 @@ def predict_img(net,
                 scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-
     img = torch.from_numpy(BasicDataset.preprocess(full_img, scale_factor))
+
+    img = transforms.Normalize((0.5,),(0.5,))(img)
+    # transform = A.Normalize((0.5),(0.5))
+    # img = transform(image=img)['image']
 
     img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
@@ -113,7 +117,7 @@ if __name__ == "__main__":
     net.load_state_dict(torch.load(args.model, map_location=device))
 
     logging.info("Model loaded !")
-    
+
     for i, fn in enumerate(in_files):
         logging.info("\nPredicting image {} ...".format(fn))
 
