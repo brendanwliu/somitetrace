@@ -64,7 +64,6 @@ class BasicDataset(Dataset):
 
         if self.transform:
             aug = A.Compose([
-                #A.ElasticTransform(p = 0.3, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
                 A.RandomCrop(128,128),
                 A.Normalize((0.5), (0.5))
             ])

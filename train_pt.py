@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from eval import eval_net
 from unet import UNet
+from utils.dice_loss import *
 
 from torch.utils.tensorboard import SummaryWriter
 from utils.dataset import BasicDataset
@@ -23,7 +24,8 @@ import torchvision.models as models
 
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
-dir_checkpoint = 'checkpoints/CP2_10_21_2020/'
+# Make a new folder with the date
+dir_checkpoint = 'checkpoints/CP1_12_10_2020/'
 
 def train_net(net,
               device,
@@ -55,12 +57,12 @@ def train_net(net,
         Images scaling:  {img_scale}
     ''')
 
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.99)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     if net.n_classes > 1:
         criterion = nn.CrossEntropyLoss()
     else:
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = DiceBCELoss() #nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
         net.train()

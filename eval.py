@@ -27,7 +27,7 @@ def eval_net(net, loader, device):
                 tot += F.cross_entropy(mask_pred, true_masks).item()
             else:
                 pred = torch.sigmoid(mask_pred)
-                pred = (pred > 0.2).float()
+                pred = (pred).float()
                 tot += dice_coeff(pred, true_masks).item()
             pbar.update()
 
