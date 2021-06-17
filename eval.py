@@ -4,7 +4,7 @@ from tqdm import tqdm
 from torchvision import transforms
 import numpy as np
 
-from utils.dice_loss import dice_coeff
+from utils.my_losses import dice_coeff
 
 
 def eval_net(net, loader, device):

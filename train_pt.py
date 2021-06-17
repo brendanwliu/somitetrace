@@ -12,6 +12,7 @@ from tqdm import tqdm
 from eval import eval_net
 from unet import UNet
 from utils.dice_loss import *
+from utils.boundary_loss import *
 
 from torch.utils.tensorboard import SummaryWriter
 from utils.dataset import BasicDataset
@@ -25,12 +26,12 @@ import torchvision.models as models
 dir_img = 'datasets/SomiteTraceLibrary/input/frames/'
 dir_mask = 'datasets/SomiteTraceLibrary/input/masks/'
 # Make a new folder with the date
-dir_checkpoint = 'checkpoints/CP1_12_10_2020/'
+dir_checkpoint = 'checkpoints/CP1_1_5_2021/'
 
 def train_net(net,
               device,
               epochs=5,
-              batch_size=8,
+              batch_size=16,
               lr=0.001,
               val_percent=0.1,
               save_cp=True,
@@ -62,7 +63,7 @@ def train_net(net,
     if net.n_classes > 1:
         criterion = nn.CrossEntropyLoss()
     else:
-        criterion = DiceBCELoss() #nn.BCEWithLogitsLoss()
+        criterion =  GDiceLossV2() #nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
         net.train()
@@ -137,7 +138,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=10,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=8,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=16,
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.01,
                         help='Learning rate', dest='lr')
